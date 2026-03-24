@@ -165,6 +165,33 @@ export const linkPendingGoogleCredentialIfNeeded = async (user: User): Promise<b
   return true;
 };
 
+export const getReadableAuthError = (error: unknown, fallbackMessage: string): string => {
+  const authError = error as { code?: string; message?: string };
+  const code = authError.code ?? "";
+
+  if (!code) {
+    return fallbackMessage;
+  }
+
+  const knownMessages: Record<string, string> = {
+    "auth/popup-closed-by-user": "Google sign-in was canceled before it finished. Please try again.",
+    "auth/cancelled-popup-request": "Another Google sign-in window was already open. Please try again.",
+    "auth/popup-blocked": "Your browser blocked the Google sign-in popup. Allow popups for this site and try again.",
+    "auth/unauthorized-domain": "This website domain is not authorized for Google sign-in in Firebase.",
+    "auth/operation-not-allowed": "Google sign-in is not enabled in Firebase Authentication.",
+    "auth/account-exists-with-different-credential":
+      "This email already uses a different sign-in method. Sign in with the email link first so we can connect Google.",
+    "auth/credential-already-in-use":
+      "This Google account is already linked to another user in Firebase Authentication.",
+  };
+
+  if (knownMessages[code]) {
+    return `${knownMessages[code]} (${code})`;
+  }
+
+  return `${fallbackMessage} (${code})`;
+};
+
 export const signOutUser = async (): Promise<void> => {
   await signOut(auth);
 };

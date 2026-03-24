@@ -11,6 +11,7 @@ import {
   finishEmailLinkSignIn,
   getStoredEmailLinkAddress,
   getPendingGoogleLinkEmail,
+  getReadableAuthError,
   isAdminEmail,
   isApprovedEmail,
   isCurrentUrlEmailSignInLink,
@@ -148,7 +149,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return;
       }
 
-      setAuthError("Google sign-in was not completed. Please try again.");
+      setAuthError(getReadableAuthError(error, "Google sign-in was not completed. Please try again."));
       setLoading(false);
     }
   };
