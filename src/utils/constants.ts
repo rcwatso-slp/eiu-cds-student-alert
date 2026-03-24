@@ -3,9 +3,9 @@ import type { AlertFormValues, Severity } from "../types/alert";
 export const APP_NAME = "EIU CDS Student Alert System";
 export const EMAIL_LINK_STORAGE_KEY = "eiu-alert-email-link";
 
-export const ADMIN_EMAILS = ["rcwatso@gmail.com", "angela.anthony@eiu.edu"];
+export const ADMIN_EMAILS = ["rcwatso@gmail.com", "abanthony@eiu.edu"];
 
-export const EXPLICIT_APPROVED_EMAILS = ["rcwatso@gmail.com", "angela.anthony@eiu.edu"];
+export const EXPLICIT_APPROVED_EMAILS = ["rcwatso@gmail.com", "abanthony@eiu.edu"];
 
 export const CONCERN_TYPE_OPTIONS = [
   "Academic Performance",

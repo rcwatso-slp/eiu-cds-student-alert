@@ -29,7 +29,7 @@ EIU CDS Student Alert System is a frontend-only MVP web application for the Comm
 ### Admin users
 
 - `rcwatso@gmail.com`
-- `angela.anthony@eiu.edu`
+- `abanthony@eiu.edu`
 
 ### Faculty users
 
