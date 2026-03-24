@@ -20,6 +20,7 @@ export interface AuthState {
 export interface AuthContextValue extends AuthState {
   sendSignInLink: (email: string) => Promise<void>;
   completeSignInWithEmailLink: (email: string, link?: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   clearAuthError: () => void;
   isEmailLinkSignIn: boolean;

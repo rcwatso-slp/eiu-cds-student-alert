@@ -1,12 +1,16 @@
 import {
+  GoogleAuthProvider,
   isSignInWithEmailLink,
   sendSignInLinkToEmail,
   signOut,
+  signInWithPopup,
   signInWithEmailLink,
   type User,
 } from "firebase/auth";
 import { auth } from "../firebase/config";
 import { ADMIN_EMAILS, EMAIL_LINK_STORAGE_KEY, EXPLICIT_APPROVED_EMAILS } from "./constants";
+
+const googleProvider = new GoogleAuthProvider();
 
 export const isApprovedEmail = (email: string | null | undefined): boolean => {
   if (!email) {
@@ -64,6 +68,10 @@ export const clearStoredEmailLinkAddress = (): void => {
 export const finishEmailLinkSignIn = async (email: string, url: string): Promise<void> => {
   await signInWithEmailLink(auth, email, url);
   clearStoredEmailLinkAddress();
+};
+
+export const startGoogleSignIn = async (): Promise<void> => {
+  await signInWithPopup(auth, googleProvider);
 };
 
 export const signOutUser = async (): Promise<void> => {

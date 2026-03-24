@@ -15,6 +15,7 @@ import {
   mapFirebaseUser,
   signOutUser,
   startEmailLinkSignIn,
+  startGoogleSignIn,
 } from "../utils/auth";
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -99,6 +100,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  const signInWithGoogle = async () => {
+    setAuthError("");
+    setAuthNotice("");
+
+    try {
+      setLoading(true);
+      await startGoogleSignIn();
+    } catch {
+      setAuthError("Google sign-in was not completed. Please try again.");
+      setLoading(false);
+    }
+  };
+
   const logout = async () => {
     await signOutUser();
     setFirebaseUser(null);
@@ -125,6 +139,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       authError,
       sendSignInLink,
       completeSignInWithEmailLink,
+      signInWithGoogle,
       logout,
       clearAuthError,
       isEmailLinkSignIn: isCurrentUrlEmailSignInLink(window.location.href),

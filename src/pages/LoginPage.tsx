@@ -20,6 +20,7 @@ export const LoginPage = () => {
     clearAuthError,
     sendSignInLink,
     completeSignInWithEmailLink,
+    signInWithGoogle,
     isEmailLinkSignIn,
     linkEmailSentTo,
   } = useAuth();
@@ -95,7 +96,7 @@ export const LoginPage = () => {
         <h1 className="mt-4 text-3xl font-semibold text-slate-900">{APP_NAME}</h1>
         <p className="mt-4 text-sm leading-6 text-slate-600">
           Faculty can submit student alerts for review. Admin users can review all submitted alerts.
-          Sign in uses secure Firebase email links sent to approved accounts.
+          Sign in can use a secure Firebase email link or Google for approved accounts.
         </p>
 
         {authError ? (
@@ -151,9 +152,22 @@ export const LoginPage = () => {
             </p>
           ) : null}
 
+          {!isEmailLinkSignIn ? (
+            <>
+              <div className="flex items-center gap-3 py-1 text-xs uppercase tracking-[0.2em] text-slate-400">
+                <span className="h-px flex-1 bg-slate-200" />
+                <span>Or</span>
+                <span className="h-px flex-1 bg-slate-200" />
+              </div>
+              <Button fullWidth variant="secondary" onClick={() => void signInWithGoogle()} disabled={submitting}>
+                Sign In with Google
+              </Button>
+            </>
+          ) : null}
+
           <p className="text-sm text-slate-500">
             Approved access includes EIU email accounts ending in <strong>@eiu.edu</strong> and
-            designated admin accounts. In Firebase Authentication, enable both <strong>Email/Password</strong> and <strong>Email link (passwordless sign-in)</strong>.
+            designated admin accounts. In Firebase Authentication, enable <strong>Email/Password</strong>, <strong>Email link (passwordless sign-in)</strong>, and <strong>Google</strong> if you want both methods available.
           </p>
         </div>
       </Card>
