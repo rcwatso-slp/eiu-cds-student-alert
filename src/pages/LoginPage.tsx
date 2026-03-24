@@ -1,14 +1,38 @@
+import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { APP_NAME } from "../utils/constants";
+import { getStoredEmailLinkAddress, isApprovedEmail } from "../utils/auth";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { PageContainer } from "../components/layout/PageContainer";
 
 export const LoginPage = () => {
-  const { loading, isAuthenticated, isApprovedUser, isAdmin, authError, clearAuthError, signInWithGoogle } =
-    useAuth();
+  const {
+    loading,
+    isAuthenticated,
+    isApprovedUser,
+    isAdmin,
+    authError,
+    authNotice,
+    clearAuthError,
+    sendSignInLink,
+    completeSignInWithEmailLink,
+    isEmailLinkSignIn,
+    linkEmailSentTo,
+  } = useAuth();
+  const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const storedEmail = getStoredEmailLinkAddress();
+    if (storedEmail) {
+      setEmail(storedEmail);
+    }
+  }, []);
 
   if (loading) {
     return <LoadingSpinner label="Loading sign-in..." />;
@@ -17,6 +41,50 @@ export const LoginPage = () => {
   if (isAuthenticated && isApprovedUser) {
     return <Navigate to={isAdmin ? "/admin" : "/submit"} replace />;
   }
+
+  const validateEmail = () => {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      setEmailError("Please enter your email address.");
+      return "";
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      setEmailError("Please enter a valid email address.");
+      return "";
+    }
+
+    if (!isApprovedEmail(normalizedEmail)) {
+      setEmailError("Please use an approved EIU or designated admin email address.");
+      return "";
+    }
+
+    setEmailError("");
+    return normalizedEmail;
+  };
+
+  const handleSendLink = async () => {
+    const normalizedEmail = validateEmail();
+    if (!normalizedEmail) {
+      return;
+    }
+
+    setSubmitting(true);
+    await sendSignInLink(normalizedEmail);
+    setSubmitting(false);
+  };
+
+  const handleCompleteSignIn = async () => {
+    const normalizedEmail = validateEmail();
+    if (!normalizedEmail) {
+      return;
+    }
+
+    setSubmitting(true);
+    await completeSignInWithEmailLink(normalizedEmail);
+    setSubmitting(false);
+  };
 
   return (
     <PageContainer className="flex min-h-screen items-center justify-center">
@@ -27,7 +95,7 @@ export const LoginPage = () => {
         <h1 className="mt-4 text-3xl font-semibold text-slate-900">{APP_NAME}</h1>
         <p className="mt-4 text-sm leading-6 text-slate-600">
           Faculty can submit student alerts for review. Admin users can review all submitted alerts.
-          Access is limited to approved EIU accounts.
+          Sign in uses secure Firebase email links sent to approved accounts.
         </p>
 
         {authError ? (
@@ -45,13 +113,47 @@ export const LoginPage = () => {
           </div>
         ) : null}
 
+        {authNotice ? (
+          <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            {authNotice}
+          </div>
+        ) : null}
+
         <div className="mt-8 space-y-4">
-          <Button fullWidth onClick={() => void signInWithGoogle()}>
-            Sign In with Google
-          </Button>
+          <Input
+            id="email"
+            type="email"
+            label="Email Address"
+            placeholder="name@eiu.edu"
+            value={email}
+            onChange={(event) => {
+              setEmail(event.target.value);
+              if (emailError) {
+                setEmailError("");
+              }
+            }}
+            error={emailError}
+          />
+
+          {isEmailLinkSignIn ? (
+            <Button fullWidth onClick={() => void handleCompleteSignIn()} disabled={submitting}>
+              {submitting ? "Completing Sign-In..." : "Complete Sign-In"}
+            </Button>
+          ) : (
+            <Button fullWidth onClick={() => void handleSendLink()} disabled={submitting}>
+              {submitting ? "Sending Link..." : "Email Me a Sign-In Link"}
+            </Button>
+          )}
+
+          {linkEmailSentTo ? (
+            <p className="text-sm text-slate-500">
+              Last sign-in link sent to <strong>{linkEmailSentTo}</strong>.
+            </p>
+          ) : null}
+
           <p className="text-sm text-slate-500">
             Approved access includes EIU email accounts ending in <strong>@eiu.edu</strong> and
-            designated admin accounts.
+            designated admin accounts. In Firebase Authentication, enable both <strong>Email/Password</strong> and <strong>Email link (passwordless sign-in)</strong>.
           </p>
         </div>
       </Card>

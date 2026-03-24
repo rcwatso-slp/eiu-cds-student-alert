@@ -5,7 +5,17 @@ import {
 import { createContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { auth } from "../firebase/config";
 import type { AppUser, AuthContextValue } from "../types/auth";
-import { isAdminEmail, isApprovedEmail, mapFirebaseUser, signOutUser, startGoogleSignIn } from "../utils/auth";
+import {
+  clearStoredEmailLinkAddress,
+  finishEmailLinkSignIn,
+  getStoredEmailLinkAddress,
+  isAdminEmail,
+  isApprovedEmail,
+  isCurrentUrlEmailSignInLink,
+  mapFirebaseUser,
+  signOutUser,
+  startEmailLinkSignIn,
+} from "../utils/auth";
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
@@ -18,6 +28,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState("");
+  const [authNotice, setAuthNotice] = useState("");
+  const [linkEmailSentTo, setLinkEmailSentTo] = useState("");
+
+  useEffect(() => {
+    if (!isCurrentUrlEmailSignInLink(window.location.href)) {
+      return;
+    }
+
+    const storedEmail = getStoredEmailLinkAddress();
+    if (!storedEmail) {
+      setAuthNotice("Finish signing in by entering the same email address that received your sign-in link.");
+    }
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -32,6 +55,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       if (!isApprovedEmail(email)) {
         setAuthError("Access denied. You must sign in with an approved EIU account.");
+        clearStoredEmailLinkAddress();
         setFirebaseUser(null);
         setUser(null);
         await signOutUser();
@@ -48,14 +72,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return () => unsubscribe();
   }, []);
 
-  const signInWithGoogle = async () => {
+  const sendSignInLink = async (email: string) => {
     setAuthError("");
+    setAuthNotice("");
+
+    try {
+      await startEmailLinkSignIn(email.trim().toLowerCase());
+      setLinkEmailSentTo(email.trim().toLowerCase());
+      setAuthNotice("Your secure sign-in link has been sent. Check your email to continue.");
+    } catch {
+      setAuthError("We could not send a sign-in link right now. Please try again.");
+    }
+  };
+
+  const completeSignInWithEmailLink = async (email: string, link = window.location.href) => {
+    setAuthError("");
+    setAuthNotice("");
 
     try {
       setLoading(true);
-      await startGoogleSignIn();
+      await finishEmailLinkSignIn(email.trim().toLowerCase(), link);
+      setLinkEmailSentTo("");
     } catch {
-      setAuthError("Sign-in was not completed. Please try again.");
+      setAuthError("We could not complete sign-in from this email link. Please request a new link and try again.");
       setLoading(false);
     }
   };
@@ -84,11 +123,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       isFaculty: approved && !admin,
       loading,
       authError,
-      signInWithGoogle,
+      sendSignInLink,
+      completeSignInWithEmailLink,
       logout,
       clearAuthError,
+      isEmailLinkSignIn: isCurrentUrlEmailSignInLink(window.location.href),
+      linkEmailSentTo,
+      authNotice,
     };
-  }, [authError, firebaseUser, loading, user]);
+  }, [authError, authNotice, firebaseUser, linkEmailSentTo, loading, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

@@ -4,7 +4,7 @@ EIU CDS Student Alert System is a frontend-only MVP web application for the Comm
 
 ## Features
 
-- Google Sign-In with Firebase Authentication
+- Passwordless email-link sign-in with Firebase Authentication
 - Approved-user access control for `@eiu.edu` accounts and named admin exceptions
 - Role-based routing for faculty and admin users
 - Faculty alert submission form with inline validation
@@ -75,7 +75,8 @@ This project already includes the Firebase config in [`src/firebase/config.ts`](
 Before using the app, make sure the Firebase console is configured correctly:
 
 1. Create or open the Firebase project `eiu-cds-student-alert`
-2. Enable Google Sign-In in Authentication
+2. Enable `Email/Password` in Authentication
+3. Enable `Email link (passwordless sign-in)` in Authentication
 3. Create a Firestore database
 4. Add these authorized domains in Firebase Authentication:
    - `localhost`
