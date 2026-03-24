@@ -26,4 +26,5 @@ export interface AuthContextValue extends AuthState {
   isEmailLinkSignIn: boolean;
   linkEmailSentTo: string;
   authNotice: string;
+  pendingLinkEmail: string;
 }

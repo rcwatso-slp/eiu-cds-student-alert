@@ -7,13 +7,17 @@ import { auth } from "../firebase/config";
 import type { AppUser, AuthContextValue } from "../types/auth";
 import {
   clearStoredEmailLinkAddress,
+  clearPendingGoogleCredential,
   finishEmailLinkSignIn,
   getStoredEmailLinkAddress,
+  getPendingGoogleLinkEmail,
   isAdminEmail,
   isApprovedEmail,
   isCurrentUrlEmailSignInLink,
+  linkPendingGoogleCredentialIfNeeded,
   mapFirebaseUser,
   signOutUser,
+  savePendingGoogleCredential,
   startEmailLinkSignIn,
   startGoogleSignIn,
 } from "../utils/auth";
@@ -31,6 +35,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [authError, setAuthError] = useState("");
   const [authNotice, setAuthNotice] = useState("");
   const [linkEmailSentTo, setLinkEmailSentTo] = useState("");
+  const [pendingLinkEmail, setPendingLinkEmail] = useState("");
 
   useEffect(() => {
     if (!isCurrentUrlEmailSignInLink(window.location.href)) {
@@ -41,6 +46,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     if (!storedEmail) {
       setAuthNotice("Finish signing in by entering the same email address that received your sign-in link.");
     }
+  }, []);
+
+  useEffect(() => {
+    setPendingLinkEmail(getPendingGoogleLinkEmail());
   }, []);
 
   useEffect(() => {
@@ -57,11 +66,24 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (!isApprovedEmail(email)) {
         setAuthError("Access denied. You must sign in with an approved EIU account.");
         clearStoredEmailLinkAddress();
+        clearPendingGoogleCredential();
+        setPendingLinkEmail("");
         setFirebaseUser(null);
         setUser(null);
         await signOutUser();
         setLoading(false);
         return;
+      }
+
+      try {
+        const didLinkGoogle = await linkPendingGoogleCredentialIfNeeded(currentUser);
+
+        if (didLinkGoogle) {
+          setAuthNotice("Google sign-in has been linked to this account. You can now use either sign-in method.");
+          setPendingLinkEmail("");
+        }
+      } catch {
+        setAuthError("Your account signed in, but Google could not be linked automatically. You can continue using your existing sign-in method.");
       }
 
       setFirebaseUser(currentUser);
@@ -107,7 +129,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       setLoading(true);
       await startGoogleSignIn();
-    } catch {
+    } catch (error) {
+      const firebaseError = error as { code?: string };
+
+      if (firebaseError.code === "auth/account-exists-with-different-credential") {
+        const pendingEmailAddress = savePendingGoogleCredential(error as never);
+
+        if (pendingEmailAddress) {
+          setPendingLinkEmail(pendingEmailAddress);
+          setAuthNotice(
+            "This email already has an account with a different sign-in method. Finish signing in with an email link, and we will connect Google automatically.",
+          );
+        } else {
+          setAuthError("Google sign-in found an existing account with a different sign-in method. Please use an email sign-in link first.");
+        }
+
+        setLoading(false);
+        return;
+      }
+
       setAuthError("Google sign-in was not completed. Please try again.");
       setLoading(false);
     }
@@ -145,8 +185,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       isEmailLinkSignIn: isCurrentUrlEmailSignInLink(window.location.href),
       linkEmailSentTo,
       authNotice,
+      pendingLinkEmail,
     };
-  }, [authError, authNotice, firebaseUser, linkEmailSentTo, loading, user]);
+  }, [authError, authNotice, firebaseUser, linkEmailSentTo, loading, pendingLinkEmail, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

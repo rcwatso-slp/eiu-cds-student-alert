@@ -23,6 +23,7 @@ export const LoginPage = () => {
     signInWithGoogle,
     isEmailLinkSignIn,
     linkEmailSentTo,
+    pendingLinkEmail,
   } = useAuth();
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -149,6 +150,12 @@ export const LoginPage = () => {
           {linkEmailSentTo ? (
             <p className="text-sm text-slate-500">
               Last sign-in link sent to <strong>{linkEmailSentTo}</strong>.
+            </p>
+          ) : null}
+
+          {pendingLinkEmail ? (
+            <p className="text-sm text-slate-500">
+              Google linking is waiting for <strong>{pendingLinkEmail}</strong>. Use that same email with the sign-in link to finish connecting the account.
             </p>
           ) : null}
 
